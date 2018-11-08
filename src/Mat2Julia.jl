@@ -1,13 +1,27 @@
 module Mat2Julia
 
-function medfilt1(arr, filt_len)
+function speed()
+    r = rand(100000)
+    @time speed_test(r)
+end
+
+function speed_test(r)
+    for k = 1:99
+        Mat2Julia.medfilt1(r[k*1000 .+ (1:1000)], 14)
+    end
+end
+
+function medfilt1(arr_raw, filt_len)
+    arr = [zeros(eltype(arr_raw), ceil(Int, (filt_len-1) / 2)); arr_raw; zeros(eltype(arr_raw), floor(Int, (filt_len-1) / 2))]
+
     arr_len = length(arr)
     filt_len_odd = isodd(filt_len)
     half_ind = ceil(Int, filt_len / 2)
     meds = zeros(arr_len - filt_len + 1)
     list = arr[1:filt_len]
     order = sortperm(list)
-    if filt_len_odd > 0
+    new_order = order
+    if filt_len_odd
         meds[1] = list[order[half_ind]]
     else
         meds[1] = (list[order[half_ind]] + list[order[half_ind + 1]]) / 2
@@ -17,14 +31,24 @@ function medfilt1(arr, filt_len)
     for k = filt_len+1:arr_len
         list[counter] = arr[k] # swap out oldest element
 
-        m = findfirst(order .== counter) # old element position in order
-        n = count(list[counter] .>= list) # new element position in order, use self equality in comparison
-        if m < n
-            order[m:n-1] = order[m+1:n] # downshift
-        else
-            order[n+1:m] = order[n:m-1] # upshift
+        ind = 1
+        placed = false
+        for n = 1:filt_len
+
+            if order[n] == counter || ind >= filt_len
+                continue # do nothing
+            elseif list[order[n]] > list[counter] && ~placed
+                placed = true
+                new_order[ind] = counter
+                ind += 1
+            end
+            new_order[ind] = order[n]
+            ind += 1
         end
-        order[n] = counter
+        if ~placed
+            new_order[ind] = counter
+        end
+        order = copy(new_order)
 
         if filt_len_odd > 0
             median_k = list[order[half_ind]]

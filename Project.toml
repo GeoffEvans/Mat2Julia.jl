@@ -1,0 +1,6 @@
+authors = ["GEvans "]
+name = "Mat2Julia"
+uuid = "e32e28fe-e342-11e8-20db-176f09d26059"
+version = "0.1.0"
+
+[deps]
